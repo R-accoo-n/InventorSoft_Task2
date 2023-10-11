@@ -1,57 +1,54 @@
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.text.DecimalFormat;
+import java.util.function.Function;
 
-public class Range<T extends Number & Comparable<T>> implements Set<T> {
-    private final SortedSet<T> elements;
+public class Range<T extends Comparable<T>> implements Set<T> {
+    private final Set<T> elements;
 
     public Range() {
-        elements = new TreeSet<>();
+        elements = new HashSet<>();
     }
 
-    public static <T extends Number & Comparable<T>> Range<T> of(T from, T to) {
+    public static <T extends Comparable<T>> Range<T> of(T from, T to) {
         if(from.compareTo(to) > 0){
             throw new IllegalArgumentException("Starting value can not be bigger then ending value");
         }
 
         Range<T> range = new Range<>();
-        String type = String.valueOf(from.getClass());
+        while (from.compareTo(to) < 0) {
+            range.add(from);
+            from = defaultIncrement(from);
+        }
+        return range;
+    }
 
-        //in case of necessity can be extended for all classes that extend Number
-        switch (type){
-            case "class java.lang.Integer" ->{
-                int startInt = from.intValue();
-                int endInt = to.intValue();
-                for (int i = startInt; i < endInt; i++) {
-                    range.add((T) Integer.valueOf(i));
-                }
+    private static <T extends Comparable<T>> T defaultIncrement(T value) {
+
+        switch (value.getClass().getSimpleName()){
+            case "Integer" -> {
+                return (T) Integer.valueOf(((Integer) value) + 1);
             }
-            case "class java.lang.Float" ->{
-                float startFloat = from.floatValue();
-                float endFloat = to.floatValue();
-                float step = 0.1f;
-                for (float i = startFloat; i < endFloat; i += step) {
-                    range.add((T) Float.valueOf(i));
-                }
+            case "Long" -> {
+                return (T) Long.valueOf(((Long) value) + 1);
             }
-            case "class java.lang.Double" ->{
-                double startDouble = from.doubleValue();
-                double endDouble = to.doubleValue();
-                double step = 0.1;
-                for (double i = startDouble; i < endDouble; i += step) {
-                    range.add((T) Double.valueOf(i));
-                }
+            case "Double" -> {
+                return (T) Double.valueOf(((Double) value) + 0.1);
             }
-            case "class java.lang.Long" ->{
-                long startLong = from.longValue();
-                long endLong = to.longValue();
-                for (long i = startLong; i < endLong; i++) {
-                    range.add((T) Long.valueOf(i));
-                }
+            case "Float" ->{
+                return (T) Float.valueOf(((Float) value) + 0.1f);
             }
             default -> throw new IllegalArgumentException("Unsupported type");
         }
 
+    }
+
+    public static <T extends Comparable<T>> Range<T> of(T from, T to, Function<T, T> incrementFunction) {
+        Range<T> range = new Range<>();
+        while (from.compareTo(to) < 0) {
+            range.add(from);
+            from = incrementFunction.apply(from);
+        }
         return range;
     }
 
