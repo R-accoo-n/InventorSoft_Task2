@@ -1,8 +1,6 @@
-import java.text.DecimalFormatSymbols;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
+import java.text.DecimalFormatSymbols;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.NoSuchElementException;
@@ -12,12 +10,16 @@ import java.util.function.Function;
 
 public class Range<T extends Comparable<T>> implements Set<T>, Comparable<Range<T>> {
 
+    private static final String UOE_DELETE_LITERAL = "You can not remove elements from the range";
+
     private T start;
     private T end;
 
     private Function<T, T> incrementFunction;
 
-    public Range() {
+    private Range() {
+
+
         incrementFunction = t -> {
             switch (t.getClass().getSimpleName()){
                 case "Integer" -> {
@@ -38,25 +40,9 @@ public class Range<T extends Comparable<T>> implements Set<T>, Comparable<Range<
     }
 
     private Range(T start, T end){
+        this();
         this.start = start;
         this.end = end;
-        incrementFunction = t -> {
-            switch (t.getClass().getSimpleName()){
-                case "Integer" -> {
-                    return (T) Integer.valueOf(((Integer) t) + 1);
-                }
-                case "Long" -> {
-                    return (T) Long.valueOf(((Long) t) + 1);
-                }
-                case "Double" -> {
-                    return (T) Double.valueOf(((Double) t) + 0.1);
-                }
-                case "Float" ->{
-                    return (T) Float.valueOf(((Float) t) + 0.1f);
-                }
-                default -> throw new IllegalArgumentException("Unsupported type");
-            }
-        };
     }
 
 
@@ -69,13 +55,13 @@ public class Range<T extends Comparable<T>> implements Set<T>, Comparable<Range<
     }
 
     public static <T extends Comparable<T>> Range<T> of(T from, T to, Function<T, T> incrementFunction) {
-        Range<T> range = new Range<>(from, to);
-
-        try {
-            range.incrementFunction = incrementFunction;
-        }catch (NullPointerException | IllegalArgumentException e){
-            System.out.println(e.getMessage());
+        if(from == null || to == null || incrementFunction == null){
+            throw new IllegalArgumentException("Can not use null variables");
         }
+
+        Range<T> range = new Range<>(from, to);
+        range.incrementFunction = incrementFunction;
+
         return range;
     }
 
@@ -96,15 +82,12 @@ public class Range<T extends Comparable<T>> implements Set<T>, Comparable<Range<
 
     @Override
     public boolean containsAll(Collection<?> collection) {
-        boolean res = true;
         for(Object element : collection){
-            if (!(((T) element).compareTo(this.start) >= 0 ||
-                ((T) element).compareTo(this.end) < 0)) {
-                res = false;
-                break;
+            if (!contains(element)) {
+                return false;
             }
         }
-        return res;
+        return true;
     }
 
     @Override
@@ -121,8 +104,7 @@ public class Range<T extends Comparable<T>> implements Set<T>, Comparable<Range<
     @Override
     public int size() {
         int size = 0;
-        for(T i = this.start; i.compareTo(this.end) < 0; ){
-            i = this.incrementFunction.apply(i);
+        for(T i = this.start; i.compareTo(this.end) < 0; i = this.incrementFunction.apply(i)){
             size++;
         }
         return size;
@@ -130,22 +112,22 @@ public class Range<T extends Comparable<T>> implements Set<T>, Comparable<Range<
 
     @Override
     public boolean remove(Object o) {
-        throw new UnsupportedOperationException("You can not remove elements from the range");
+        throw new UnsupportedOperationException(Range.UOE_DELETE_LITERAL);
     }
 
     @Override
     public boolean removeAll(Collection<?> collection) {
-        throw new UnsupportedOperationException("You can not remove elements from the range");
+        throw new UnsupportedOperationException(Range.UOE_DELETE_LITERAL);
     }
 
     @Override
     public boolean retainAll(Collection<?> collection) {
-        throw new UnsupportedOperationException("You can not remove elements from the range");
+        throw new UnsupportedOperationException(Range.UOE_DELETE_LITERAL);
     }
 
     @Override
     public Iterator<T> iterator() {
-        return new Iterator<T>() {
+        return new Iterator<>() {
             private T current = start;
 
             @Override
@@ -167,20 +149,13 @@ public class Range<T extends Comparable<T>> implements Set<T>, Comparable<Range<
 
     @Override
     public T[] toArray() {
-        Object[] array = new Object[this.size()];
-        T temp = this.start;
-        for(int i = 0; i < size(); i++){
-            array[i] = temp;
-            temp = incrementFunction.apply(temp);
-        }
-        return (T[]) array;
-
+        throw new UnsupportedOperationException("You can not transfer range to Array");
     }
 
 
     @Override
     public <E> E[] toArray(E[] a) {
-        throw new UnsupportedOperationException("To transfer objets to array use public T[] toArray()");
+        throw new UnsupportedOperationException("You can not transfer range to Array");
     }
 
     @Override
@@ -208,13 +183,7 @@ public class Range<T extends Comparable<T>> implements Set<T>, Comparable<Range<
 
     @Override
     public int compareTo(Range<T> other) {
-        if(this.size() > other.size()){
-            return 1;
-        }else if (this.size() == other.size()){
-            return 0;
-        }else {
-            return -1;
-        }
+        return Integer.compare(this.size(), other.size());
     }
 
     @Override
